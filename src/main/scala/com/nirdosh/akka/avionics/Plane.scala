@@ -16,5 +16,13 @@ class Plane extends Actor with ActorLogging{
     case GiveMeControl =>
       log info("Plane giving control.")
       sender ! controls
+    case AltitudeUpdate(altitude) =>
+      log info ( s"Altitude is now : $altitude")
+  }
+
+  import EventSource._
+
+  override def preStart(): Unit = {
+    altimeter ! RegisterListener(self)
   }
 }

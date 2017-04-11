@@ -4,13 +4,15 @@ object Altimeter {
 
   case class RateChange(amount: Float)
 
+  case class AltitudeUpdate(altitude: Double)
+
 }
 
 import akka.actor.{Actor, ActorLogging}
 
 import scala.concurrent.duration._
 
-class Altimeter extends Actor with ActorLogging {
+class Altimeter extends Actor with ActorLogging with EventSource {
 
   import Altimeter._
 
@@ -22,9 +24,13 @@ class Altimeter extends Actor with ActorLogging {
   var lastTick = System.currentTimeMillis
   val ticker = context.system.scheduler.schedule(100.millis, 100.millis, self, Tick)
 
+  override type Receive = PartialFunction[Any, Unit]
+
   case object Tick
 
-  override def receive = {
+  override def receive = eventSourceReceive orElse altimeterReceive
+
+  def altimeterReceive: Receive  = {
     case RateChange(amount) =>
       rateOfClimb = amount.min(1.0f).max(-1.0f) * maxRateOfClimb
       log info (s"Altimeter changed rate of climb to $rateOfClimb")
@@ -32,6 +38,7 @@ class Altimeter extends Actor with ActorLogging {
       val tick = System.currentTimeMillis
       altitude = altitude + ((tick - lastTick) / 60000.0) * rateOfClimb
       lastTick = tick
+      sendEvent(AltitudeUpdate(altitude))
   }
 
   override def postStop(): Unit = ticker.cancel()
