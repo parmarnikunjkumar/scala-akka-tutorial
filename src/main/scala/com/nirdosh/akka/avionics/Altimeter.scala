@@ -12,7 +12,8 @@ import akka.actor.{Actor, ActorLogging}
 
 import scala.concurrent.duration._
 
-class Altimeter extends Actor with ActorLogging with EventSource {
+class Altimeter extends Actor with ActorLogging {
+  this: EventSource =>
 
   import Altimeter._
 
